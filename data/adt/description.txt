@@ -1,0 +1,4 @@
+В этой папке собраны ежедневные данные adt в Карском море
+Источник: https://data.marine.copernicus.eu/product/SEALEVEL_GLO_PHY_L4_MY_008_047/description
+Временной интервал: 01.01.1993 - 26.11.2024
+Границы: west-east: 55E - 105E; south-north: 70N - 80N

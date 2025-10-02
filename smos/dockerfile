@@ -1,0 +1,50 @@
+FROM continuumio/miniconda3:latest
+
+MAINTAINER Mikhail Krinitskiy <krinitsky@sail.msk.ru>
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+RUN 	apt-get update && \
+	apt-get install -y sudo openssh-server vim tmux mc links && \
+	apt-get purge && \
+	apt-get clean && \
+	mkdir /var/run/sshd && \
+	sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config && \
+	echo 'Port 2222' >> /etc/ssh/sshd_config && \
+	echo 'Protocol 2' >> /etc/ssh/sshd_config && \
+	echo 'SyslogFacility AUTH' >> /etc/ssh/sshd_config && \
+	echo 'LogLevel INFO' >> /etc/ssh/sshd_config && \
+	echo 'PermitRootLogin no' >> /etc/ssh/sshd_config && \
+	echo 'StrictModes yes' >> /etc/ssh/sshd_config && \
+	echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && \
+	echo 'IgnoreRhosts yes' >> /etc/ssh/sshd_config && \
+	echo 'HostbasedAuthentication no' >> /etc/ssh/sshd_config && \
+	echo 'PermitEmptyPasswords no' >> /etc/ssh/sshd_config && \
+	echo 'ChallengeResponseAuthentication no' >> /etc/ssh/sshd_config && \
+	echo 'GSSAPIAuthentication no' >> /etc/ssh/sshd_config && \
+	echo 'TCPKeepAlive yes' >> /etc/ssh/sshd_config && \
+	echo "sshd done"
+	
+
+RUN	groupadd -g 20000 sail && \
+	useradd -c 'Mikhail Krinitskiy' -u 1001 -G sail -m -d /home/mk -s /bin/bash mk && \
+	echo 'mk:iamcoidofgjiodgc' | chpasswd && \
+	usermod -g sail mk && \
+	echo 'mk ALL=(ALL)NOPASSWD:ALL' >> /etc/sudoers && \
+	echo "users done"
+
+RUN	conda install ipython requests numpy && \
+	conda clean --all -y
+
+RUN	pip install cdsapi
+
+USER	mk
+RUN	mkdir /home/mk/.ssh && \
+	chmod 700 /home/mk/.ssh
+COPY	./mk_tesla_key.pub /home/mk/.ssh/mk_tesla_key.pub
+RUN	sudo chown mk:sail /home/mk/.ssh/mk_tesla_key.pub && \
+	sudo cat /home/mk/.ssh/mk_tesla_key.pub >> /home/mk/.ssh/authorized_keys && \
+	sudo chown mk:sail /home/mk/.ssh/authorized_keys && \
+	sudo chmod 600 /home/mk/.ssh/authorized_keys && \
+	sudo rm /home/mk/.ssh/mk_tesla_key.pub
+
+EXPOSE 2222

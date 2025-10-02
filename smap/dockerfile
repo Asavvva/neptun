@@ -1,0 +1,20 @@
+# Используем официальный Python образ
+FROM python:3.11-slim
+
+# Устанавливаем рабочую директорию
+WORKDIR /app/smap
+
+# Копируем скрипт в контейнер
+COPY smap_download.py /app/smap/
+
+# Устанавливаем необходимые библиотеки
+# Библиотека ftplib входит в стандартную библиотеку Python, поэтому установка не требуется
+
+# # Устанавливаем рабочие переменные окружения для передачи параметров
+# ENV SERVER=ftp.example.com
+# ENV USERNAME=your_username
+# ENV PASSWORD=your_password
+# ENV REMOTE_DIR=smap/SSS/V06.0/FINAL/L2C
+
+# Команда для запуска скрипта
+CMD ["python", "smap_download.py"]
