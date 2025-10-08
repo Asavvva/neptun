@@ -58,13 +58,17 @@ def train_single_epoch(encoder: torch.nn.Module,
     
     for batch_data in dataloader:
         optimizer.zero_grad()
-        data, _, _ = batch_data
+        data, land_mask, _ = batch_data
         data_gpu = data.to(device='cuda', dtype=torch.float)
+        land_mask_gpu = land_mask.to(device='cuda', dtype=torch.float)
         
         encoded_data = encoder.forward(data_gpu)
         decoded_data = decoder.forward(encoded_data)
+
+        data_gpu_masked = data_gpu[land_mask_gpu == 1]
+        result_masked = decoded_data[land_mask_gpu == 1]
         
-        loss = loss_function(data_gpu, decoded_data)
+        loss = loss_function(data_gpu_masked, result_masked)
         
         loss.backward()
         optimizer.step()
@@ -89,13 +93,17 @@ def validate_single_epoch(encoder: torch.nn.Module,
     
     with torch.no_grad():
         for batch_data in dataloader:
-            data, _, _ = batch_data
+            data, land_mask, _ = batch_data
             data_gpu = data.to(device='cuda', dtype=torch.float)
+            land_mask_gpu = land_mask.to(device='cuda', dtype=torch.float)
 
             encoded_data = encoder.forward(data_gpu)
             decoded_data = decoder.forward(encoded_data)
+
+            data_gpu_masked = data_gpu[land_mask_gpu == 1]
+            result_masked = decoded_data[land_mask_gpu == 1]
             
-            loss = loss_function(data_gpu, decoded_data)
+            loss = loss_function(data_gpu_masked, result_masked)
             test_loss += loss.detach() * batch_size
             
     return {'loss': test_loss.item() / size}

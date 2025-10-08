@@ -41,12 +41,10 @@ class CustomDataset(TorchDataset):
         ugos = self.ugos[index, :]
         vgos = self.vgos[index, :]
         flag_ice = self.flag_ice[index, :]
-        
-        land_mask = np.where(np.isnan(adt), 0, 1)
-        adt[land_mask==0] = 0
-        ugos[land_mask==0] = 0
-        vgos[land_mask==0] = 0
+
         data2D = np.stack([adt, ugos, vgos])
+        land_mask = np.where(np.isnan(data2D), 0, 1)
+        data2D[land_mask==0] = 0
 
         ice_mask = np.where(adt == 0 | (flag_ice == 1), 0, 1)
         
