@@ -114,6 +114,7 @@ def train_model(run_name: str,
                 decoder: torch.nn.Module,
                 dataset: torch.utils.data.Dataset,
                 dataloader: torch.utils.data.DataLoader,
+                batch_size: int,
                 loss_function: torch.nn.Module,
                 optimizer_class: Type[torch.optim.Optimizer] = torch.optim,
                 optimizer_params: Dict = {},
@@ -138,7 +139,7 @@ def train_model(run_name: str,
     loss_history_train = []
     loss_history_test = []
     
-    batch_size = 32
+    batch_size = batch_size
     pbar = tqdm(total=max_epochs)
     for epoch in range(max_epochs):
         train_loss = train_single_epoch(encoder, decoder, optimizer, loss_function, dataset, dataloader, batch_size=batch_size)
@@ -166,12 +167,14 @@ def train_model(run_name: str,
 if __name__ == '__main__':
     data = Dataset('/mnt/hippocamp/asavin/data/adt/adt_1993-2024_daily_n80_s70_w55_e105.nc', 'r')
 
+    batch_size = 32
     dataset = CustomDataset(data=data)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    data.close()
 
-    encoder = Encoder(in_channels=3, H=80, W=400, expansions=[4, 4, 4, 4, 4], n_blocks=30, decreases=[2, 2, 2, 2, 2], bottleneck=32)
-    decoder = Decoder(in_features=encoder.bottleneck, start_channels=3072, finish_channels=encoder.in_channels, n_layers=5,
-                      expansion_value=0.25, increase_value=2, H=3, W=13, H_out=80, W_out=400)
+    encoder = Encoder(in_channels=3, H=80, W=400, expansions=[4, 4, 4, 4], n_blocks=30, decreases=[2, 2, 2, 2], bottleneck=64)
+    decoder = Decoder(in_features=encoder.bottleneck, start_channels=768, finish_channels=encoder.in_channels, n_layers=4,
+                      expansion_value=0.25, increase_value=2, H=5, W=25, H_out=80, W_out=400)
     
     encoder = encoder.cuda()
     decoder = decoder.cuda()
@@ -181,6 +184,7 @@ if __name__ == '__main__':
     train_model(run_name, encoder, decoder,
                 dataset=dataset,
                 dataloader=dataloader,
+                batch_size=batch_size,
                 loss_function=torch.nn.MSELoss(),
                 initial_lr=0.0001,
                 max_epochs=960)
