@@ -32,11 +32,13 @@ class CustomDataset(TorchDataset):
         self.ugos = ugos
         self.vgos = vgos
         self.flag_ice = flag_ice
+
+        self.make_norm_data()
     
     def __len__(self):
         return self.adt.shape[0]
     
-    def nan_mean_var(x: np.ndarray, ddof: int = 0):
+    def nan_mean_var(self, x: np.ndarray, ddof: int = 0):
         """
         Возвращает (mean, var) по элементам x, игнорируя NaN.
         ddof=0 -> population variance, ddof=1 -> sample variance.
@@ -67,7 +69,7 @@ class CustomDataset(TorchDataset):
 
         return x_norm, float(mean), float(std)
     
-    def nan_denormalize(x_norm: np.ndarray, mean: float, std: float, eps: float = 1e-12):
+    def nan_denormalize(self, x_norm: np.ndarray, mean: float, std: float, eps: float = 1e-12):
         """
         Обратное преобразование: денормализует только не-NaN элементы.
         """
@@ -86,8 +88,6 @@ class CustomDataset(TorchDataset):
         self.vgos, _, _ = self.nan_normalize(self.vgos)
     
     def get_data(self, index):
-        self.make_norm_data()
-
         adt = self.adt[index, :]
         ugos = self.ugos[index, :]
         vgos = self.vgos[index, :]
@@ -98,7 +98,7 @@ class CustomDataset(TorchDataset):
         data2D[land_mask == 0] = 0
 
         ice_mask = np.where(np.isnan(adt) | (flag_ice == 1), 0, 1)
-        ice_mask = np.repeat(np.expand_dims(ice_mask, axis=0), 3, axis=0)
+        ice_mask = np.repeat(np.expand_dims(ice_mask, axis=0), data2D.shape[0], axis=0)
         
         return data2D, land_mask, ice_mask
     
