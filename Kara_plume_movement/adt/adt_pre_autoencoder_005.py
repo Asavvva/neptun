@@ -14,7 +14,7 @@ from typing import Tuple, List, Type, Dict, Any
 from torch.utils.tensorboard import SummaryWriter
 
 from SGDR import CosineAnnealingWarmRestarts
-from MyDataPreparation_0125 import CustomDataset, Sampler
+from MyDataPreparation_0125_norm import CustomDataset, Sampler
 from autoencoder import Encoder, Decoder
 
 device = torch.device('cuda:1')
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     encoder = encoder.cuda()
     decoder = decoder.cuda()
 
-    run_name = 'adt_pre_autoencoder_run004'
+    run_name = 'adt_pre_autoencoder_run005'
 
     train_model(run_name, encoder, decoder,
                 dataset=dataset,
