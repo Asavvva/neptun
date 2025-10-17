@@ -179,7 +179,7 @@ if __name__ == '__main__':
     encoder = encoder.cuda()
     decoder = decoder.cuda()
 
-    run_name = 'adt_pre_autoencoder_run005'
+    run_name = 'adt_pre_autoencoder_run006'
 
     train_model(run_name, encoder, decoder,
                 dataset=dataset,
