@@ -52,7 +52,7 @@ for file in wind_files:
     zrv = (trv - wind_products_norm_params['trv_mean']) / wind_products_norm_params['trv_std']
     rv = zrv
 
-    wind = np.stack([u10, v10, r, r2, tru, trv])
+    wind = np.stack([u10, v10, r, r2, ru, rv])
     wind = np.transpose(wind, (1, 0, 2, 3))
 
     with open(f'/mnt/hippocamp/asavin/data/wind/wind_products_arrays_kara_norm_n80_s70_w55_e105/{file[-11:]}', 'wb') as file:
