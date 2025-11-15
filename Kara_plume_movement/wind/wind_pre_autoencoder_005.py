@@ -51,7 +51,7 @@ def make_wind_products(zu, zv, zr, file):
     v = zv * file['v10_std'] + file['v10_mean']
 
     tr = zr * file['tr_std'] + file['tr_mean']
-    r = file['r_mean'] * torch.exp1m(tr)
+    r = file['r_mean'] * torch.expm1(tr)
     tr2_pred = torch.log1p(r**2 / file['r2_5p'])
     zr2_pred = (tr2_pred - file['tr2_mean']) / file['tr2_std']
 
@@ -88,14 +88,13 @@ def train_single_epoch(encoder: torch.nn.Module,
         optimizer.zero_grad()
         wind_gpu = batch_data.to(device='cuda', dtype=torch.float)
 
-        zu, zv, zr, zr2, zru, zrv = wind_gpu
-
-        learning_data = zu, zv, zr
+        zu, zv, zr, zr2, zru, zrv = wind_gpu.unbind(dim=1)
+        learning_data = torch.stack([zu, zv, zr], axis=1)
         
         encoded_data = encoder.forward(learning_data)
         decoded_data = decoder.forward(encoded_data)
 
-        zu_pred, zv_pred, zr_pred = decoded_data
+        zu_pred, zv_pred, zr_pred = decoded_data.unbind(dim=1)
         zr2_pred, zru_pred, zrv_pred = make_wind_products(zu_pred, zv_pred, zr_pred, file)
 
         loss_u = lambda_u * loss_function(zu, zu_pred)
@@ -141,14 +140,13 @@ def validate_single_epoch(encoder: torch.nn.Module,
         for batch_data in dataloader:
             wind_gpu = batch_data.to(device='cuda', dtype=torch.float)
 
-            zu, zv, zr, zr2, zru, zrv = wind_gpu
-
-            learning_data = zu, zv, zr
+            zu, zv, zr, zr2, zru, zrv = wind_gpu.unbind(dim=1)
+            learning_data = torch.stack([zu, zv, zr], axis=1)
             
             encoded_data = encoder.forward(learning_data)
             decoded_data = decoder.forward(encoded_data)
 
-            zu_pred, zv_pred, zr_pred = decoded_data
+            zu_pred, zv_pred, zr_pred = decoded_data.unbind(dim=1)
             zr2_pred, zru_pred, zrv_pred = make_wind_products(zu_pred, zv_pred, zr_pred, file)
 
             loss_u = lambda_u * loss_function(zu, zu_pred)
@@ -197,8 +195,22 @@ def train_model(run_name: str,
     lambda_u, lambda_v, lambda_r = 1.0, 1.0, 1.0
     lambda_r2, lambda_ru, lambda_rv = 0.2, 0.2, 0.2
     
-    loss_history_train = []
-    loss_history_test = []
+    loss_history = {
+        'loss_history_train': [],
+        'loss_u_history_train': [],
+        'loss_v_history_train': [],
+        'loss_r_history_train': [],
+        'loss_r2_history_train': [],
+        'loss_ru_history_train': [],
+        'loss_rv_history_train': [],
+        'loss_history_test': [],
+        'loss_u_history_test': [],
+        'loss_v_history_test': [],
+        'loss_r_history_test': [],
+        'loss_r2_history_test': [],
+        'loss_ru_history_test': [],
+        'loss_rv_history_test': [],
+    }
     
     batch_size = 16
     pbar = tqdm(total=max_epochs)
@@ -208,13 +220,20 @@ def train_model(run_name: str,
         
         test_loss = validate_single_epoch(encoder, decoder, loss_function, dataset, batch_size, file,
                                           lambda_u, lambda_v, lambda_r, lambda_r2, lambda_ru, lambda_rv)
-        ################################################ Добавить вывод всех loss !!!
-        loss_history_train.append(train_loss['loss'])
-        loss_history_test.append(test_loss['loss'])
         
-        tb_writer.add_scalar('train_loss', train_loss['loss'], global_step=epoch)
-        tb_writer.add_scalar('test_loss', test_loss['loss'], global_step=epoch)
+        for key in train_loss:
+            loss_history[f'{key}_history_train'].append(train_loss[f'{key}'])
+
+        for key in test_loss:
+            loss_history[f'{key}_history_test'].append(test_loss[f'{key}'])
+            
         tb_writer.add_scalar('lr', scheduler.get_last_lr()[-1], global_step=epoch)
+
+        for key in train_loss:
+            tb_writer.add_scalar(f'train_{key}', train_loss[f'{key}'], global_step=epoch)
+
+        for key in test_loss:
+            tb_writer.add_scalar(f'test_{key}', test_loss[f'{key}'], global_step=epoch)
         
         LogMessage(f'/app/Kara_plume_movement/wind/descriptions/{run_name}_description.txt',
                    f'epoch = {epoch}, train_loss = {train_loss["loss"]}, test_loss = {test_loss["loss"]}')
@@ -231,14 +250,14 @@ if __name__ == '__main__':
     with open(f'/mnt/hippocamp/asavin/data/wind/wind_products_data/wind_products_norm_params.pkl', 'rb') as file:
         wind_products_norm_params = pickle.load(file)
 
-    wind_files_pkl = find_files('/mnt/hippocamp/asavin/data/wind/wind_arrays_kara_norm_n80_s70_w55_e105', '*.pkl')
+    wind_files_pkl = find_files('/mnt/hippocamp/asavin/data/wind/wind_products_arrays_kara_norm_n80_s70_w55_e105', '*.pkl')
     wind_files_pkl.sort()
 
     dataset = CustomDataset(wind_files_pkl, n_files=30)
 
-    encoder = Encoder(in_channels=2, H=41, W=201, expansions=[4, 4, 4, 4, 4], n_blocks=50, decreases=[2, 2, 2, 2, 2], bottleneck=64)
-    decoder = Decoder(in_features=encoder.bottleneck, start_channels=2048, finish_channels=encoder.in_channels, n_layers=5,
-                      expansion_value=0.25, increase_value=2, H=2, W=7, H_out=41, W_out=201)
+    encoder = Encoder(in_channels=3, H=41, W=201, expansions=[4, 4, 4, 4], n_blocks=32, decreases=[2, 2, 2, 2], bottleneck=64)
+    decoder = Decoder(in_features=encoder.bottleneck, start_channels=768, finish_channels=encoder.in_channels, n_layers=4,
+                      expansion_value=0.25, increase_value=2, H=3, W=13, H_out=41, W_out=201)
 
     encoder = encoder.cuda()
     decoder = decoder.cuda()
@@ -250,4 +269,4 @@ if __name__ == '__main__':
                 file = wind_products_norm_params,
                 loss_function=torch.nn.MSELoss(),
                 initial_lr=0.0001,
-                max_epochs=960)
+                max_epochs=448)
