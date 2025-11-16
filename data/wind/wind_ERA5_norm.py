@@ -20,40 +20,28 @@ def find_files(directory, pattern, maxdepth=None):
     return flist
 
 
-def norm_wind(x, _mean, _std):
-    norm_x = (x - _mean) / _std
-    return norm_x
+with open(f'/mnt/hippocamp/asavin/data/wind/wind_products_data/wind_products_norm_params.pkl', 'rb') as file:
+    wind_products_norm_params = pickle.load(file)
 
-
-def load_file(filename, lon_min_era5 = 55, lon_max_era5 = 105, lat_min_era5 = 70, lat_max_era5 = 80):
-    lat_min_era5, lat_max_era5 = (90-lat_max_era5)*4, (90-lat_min_era5)*4+1
-    lon_min_era5, lon_max_era5 = lon_min_era5*4, lon_max_era5*4+1
-
-    data = Dataset(filename, 'r')
-    u10 = np.array(data.variables['u10'][:,
-                                         lat_min_era5:lat_max_era5,
-                                         lon_min_era5:lon_max_era5])
-    v10 = np.array(data.variables['v10'][:,
-                                         lat_min_era5:lat_max_era5,
-                                         lon_min_era5:lon_max_era5])
-    u10 = norm_wind(u10, norm_params['mean_u10'], norm_params['std_u10'])
-    v10 = norm_wind(v10, norm_params['mean_v10'], norm_params['std_v10'])
-    wind = np.stack([u10, v10])
-    wind = np.transpose(wind, (1, 0, 2, 3))
-    data.close()
-    
-    return wind
-
-
-with open('/mnt/hippocamp/asavin/data/wind/normalizer_params_wind_kara', 'rb') as f:
-    norm_params = pickle.load(f)
-
-wind_files = find_files('/mnt/hippocamp/DATA/ERA5/w10', '*.nc')
+wind_files = find_files('/mnt/hippocamp/asavin/data/wind/wind_products_arrays_kara_n80_s70_w55_e105', '*.pkl')
 wind_files.sort()
-wind_files = [file for file in wind_files if (file[-5:-3] <= '11' and file[-5:-3] >= '06' and
-                                              file[-10:-6] >= '1979' and file[-10:-6] < '2024')]
 
 for file in wind_files:
-    wind = load_file(file)
-    with open(f'/mnt/hippocamp/asavin/data/wind/wind_arrays_kara_norm_n80_s70_w55_e105/{file[-10:-3]}.pkl', 'wb') as file:
+    with open(file, 'rb') as f:
+        wind_data = pickle.load(f)
+
+    wind_data = np.transpose(wind_data, (1, 0, 2, 3))
+    u10, v10, r, r2, ru, rv = wind_data
+
+    u10 = (u10 - wind_products_norm_params['u10_mean']) / wind_products_norm_params['u10_std']
+    v10 = (v10 - wind_products_norm_params['v10_mean']) / wind_products_norm_params['v10_std']
+
+    tr = np.log1p(r/wind_products_norm_params['r_mean'])
+    zr = (tr - wind_products_norm_params['tr_mean']) / wind_products_norm_params['tr_std']
+    r = zr
+
+    wind = np.stack([u10, v10, r])
+    wind = np.transpose(wind, (1, 0, 2, 3))
+
+    with open(f'/mnt/hippocamp/asavin/data/wind/wind_arrays_kara_norm_n80_s70_w55_e105/{file[-11:]}', 'wb') as file:
         pickle.dump(wind, file)
