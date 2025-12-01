@@ -18,8 +18,8 @@ class CustomDataset(TorchDataset):
     """
 
     def __init__(self, dates_dict, borders):
-        self.dates = []
         self.borders = borders
+        dates = []
 
         for year_str in sorted(dates_dict.keys()):
             year = int(year_str)
@@ -37,8 +37,10 @@ class CustomDataset(TorchDataset):
             current = start_date
             while current <= finish_date:
                 # сохраняем в формате 'YYYYMMDD'
-                self.dates.append(current.strftime('%Y%m%d'))
+                dates.append(current.strftime('%Y%m%d'))
                 current += timedelta(days=1)
+
+        self.dates = dates
 
     def select_data(self, longitude, latitude, sss):
         n, s, w, e, = self.borders
@@ -63,7 +65,8 @@ class CustomDataset(TorchDataset):
 
     def make_data(self, idx):
         n, s, w, e, = self.borders
-        file = 'filename' + str(idx)
+        file = (f'/mnt/hippocamp/DATA/sattelite/ESACCI/v05.5/NHv5.5/7days/{self.dates[idx][:4]}/' +
+                f'ESACCI-SEASURFACESALINITY-L4-SSS-POLAR-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25kmEASE2_NH-{self.dates[idx]}-fv5.5.nc')
         data = Dataset(file, 'r')
         
         latitude = np.asarray(data['lat'])
@@ -72,15 +75,18 @@ class CustomDataset(TorchDataset):
 
         data.close()
         
-        lon, lat, sss_ = self.select_data(longitude=longitude, latitude=latitude, sss=sss, borders=self.borders)
+        lon, lat, sss_ = self.select_data(longitude=longitude, latitude=latitude, sss=sss)
         sss_ = np.where((lon < w) | (lon > e) | (lat > n) | (lat < s), np.nan, sss_)
+        sss_ = np.where(np.isnan(sss_), 0, sss_)
+        sss_ = sss_[np.newaxis, :, :]
+        mask = np.where(sss_ == 0, 0, 1)
 
-        return sss_
+        return sss_, mask
 
     def __len__(self):
         return len(self.dates)
 
     def __getitem__(self, idx):
-        sss = self.make_data(idx)
+        sss, mask = self.make_data(idx)
 
-        return sss
+        return sss, mask
