@@ -77,15 +77,15 @@ class CustomDataset(TorchDataset):
         
         lon, lat, sss_ = self.select_data(longitude=longitude, latitude=latitude, sss=sss)
         sss_ = np.where((lon < w) | (lon > e) | (lat > n) | (lat < s), np.nan, sss_)
-        sss_ = np.where(np.isnan(sss_), 0, sss_)
+        sss_ = np.where(np.isnan(sss_), -999, sss_)
         sss_ = sss_[np.newaxis, :, :]
-        mask = np.where(sss_ == 0, 0, 1)
+        mask = np.where(sss_ == -999, 0, 1)
 
         return sss_, mask
-
+    
     def __len__(self):
         return len(self.dates)
-
+    
     def __getitem__(self, idx):
         sss, mask = self.make_data(idx)
 
