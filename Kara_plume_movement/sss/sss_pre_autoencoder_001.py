@@ -187,7 +187,7 @@ if __name__ == '__main__':
     dataset = CustomDataset(dates_dict=dates, borders=[80,70,55,105])
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    encoder = Encoder(in_channels=1, H=74, W=52, expansions=[4, 4, 4, 4, 4], n_blocks=32, decreases=[2, 2, 2, 2, 2], bottleneck=64)
+    encoder = Encoder(in_channels=1, H=74, W=52, expansions=[4, 4, 4, 4, 4], n_blocks=50, decreases=[2, 2, 2, 2, 2], bottleneck=64)
     decoder = Decoder(in_features=encoder.bottleneck, start_channels=1024, finish_channels=encoder.in_channels, n_layers=5,
                       expansion_value=0.25, increase_value=2, H=3, W=2, H_out=74, W_out=52)
 

@@ -194,7 +194,7 @@ if __name__ == '__main__':
     encoder = encoder.cuda()
     decoder = decoder.cuda()
 
-    run_name = 'sss_pre_autoencoder_run002'
+    run_name = 'sss_pre_autoencoder_run003'
 
     train_model(run_name, encoder, decoder,
                 dataset=dataset,
@@ -202,4 +202,4 @@ if __name__ == '__main__':
                 batch_size=batch_size,
                 loss_function=torch.nn.MSELoss(),
                 initial_lr=0.0001,
-                max_epochs=448)
+                max_epochs=960)
