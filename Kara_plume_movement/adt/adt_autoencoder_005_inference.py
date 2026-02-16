@@ -50,10 +50,11 @@ def inference_single_file(encoder: torch.nn.Module,
     outputs_list = []
 
     with torch.no_grad():
-        for (batch_data,) in dataloader:
-            wind_gpu = batch_data.to(device='cuda', dtype=torch.float)
-            
-            encoded_data = encoder.forward(wind_gpu)
+        for batch_data in dataloader:
+            data, _, _ = batch_data
+            data_gpu = data.to(device='cuda', dtype=torch.float)
+
+            encoded_data = encoder.forward(data_gpu)
             outputs_list.append(encoded_data.detach().cpu())
             
     outputs = torch.cat(outputs_list, dim=0)
@@ -61,28 +62,23 @@ def inference_single_file(encoder: torch.nn.Module,
 
 
 def inference_model(run_name: str,
-                    files: List[str],
-                    encoder: torch.nn.Module):
-    batch_size = 32
-    for file in files:
-        with open(f'{file}', 'rb') as f:
-            data =  pickle.load(f)
-        tensor = torch.from_numpy(data).float()
-        dataset = TensorDataset(tensor)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-
-        outputs = inference_single_file(encoder, dataloader)
-
-        with open(f'/mnt/hippocamp/asavin/data/wind/encoded_{run_name[-3:]}_hourly_wind_arrays_kara_norm_n80_s70_w55_e105/{file[-11:]}', 'wb') as f:
-            pickle.dump(outputs.numpy(), f)
+                    encoder: torch.nn.Module,
+                    dataloader: torch.utils.data.DataLoader):
+    
+    outputs = inference_single_file(encoder, dataloader)
+    ...
 
 
 if __name__ == '__main__':
-    wind_files_pkl = find_files('/mnt/hippocamp/asavin/data/wind/wind_arrays_kara_norm_n80_s70_w55_e105', '*.pkl')
-    wind_files_pkl.sort()
+    data = Dataset('/mnt/hippocamp/asavin/data/adt/adt_1993-2024_daily_n80_s70_w55_e105.nc', 'r')
 
-    run_name = 'wind_pre_autoencoder_run007'
-    encoder = torch.load(f'/app/Kara_plume_movement/wind/models/model_{run_name}_encoder.pth', map_location=torch.device('cpu'));
+    batch_size = 32
+    dataset = CustomDataset(data=data)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    data.close()
+
+    run_name = 'adt_pre_autoencoder_run005'
+    encoder = torch.load(f'/app/Kara_plume_movement/adt/models/model_{run_name}_encoder.pth', map_location=torch.device('cpu'));
     encoder = encoder.cuda()
 
-    inference_model(run_name, wind_files_pkl, encoder)
+    inference_model(run_name, encoder, dataloader)
