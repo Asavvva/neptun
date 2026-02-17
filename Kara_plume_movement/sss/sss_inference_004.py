@@ -127,5 +127,5 @@ if __name__ == '__main__':
             for i, (date_str, path) in enumerate(zip(date_str, path)):
                 out_path_base, out_name = make_out_path(path, date_str, out_path='/app/Kara_plume_movement/extracted_features/extracted_sss_004', suffix="_encoded")
                 os.makedirs(f'{out_path_base}/{date_str[:4]}', exist_ok=True)
-                with open(f'{out_path_base}/{date_str[:4]}/{out_name}', "wb") as f:
+                with open(f'{out_path_base}/{date_str[:4]}/{out_name}.pkl', "wb") as f:
                     pickle.dump(encoded_data[i], f)
