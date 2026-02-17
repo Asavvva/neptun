@@ -66,7 +66,8 @@ def inference_model(run_name: str,
                     dataloader: torch.utils.data.DataLoader):
     
     outputs = inference_single_file(encoder, dataloader)
-    ...
+    with open(f'/app/Kara_plume_movement/extracted_features/extracted_adt_005/encoded_adt_1993-2024_daily_n80_s70_w55_e105.pkl', 'wb') as f:
+        pickle.dump(outputs.numpy(), f)
 
 
 if __name__ == '__main__':
