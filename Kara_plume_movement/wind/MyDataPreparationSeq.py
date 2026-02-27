@@ -26,7 +26,6 @@ class CustomDataset(Dataset):
         self.data = None
         self.seq_indices = None
 
-    def get_new_data(self):
         self._reload_year()
     
     def _reload_year(self):
@@ -46,7 +45,7 @@ class CustomDataset(Dataset):
         # Индексы от 0 до total_len - seq_length включительно
         # Все последовательности start:start+seq_length точно лежат внутри июня-ноября
         self.seq_indices = [i for i in range(0, total_len - self.seq_length + 1)]
-        random.shuffle(self.seq_indices)
+        # random.shuffle(self.seq_indices)
 
     def __len__(self):
         return len(self.seq_indices)
@@ -63,11 +62,11 @@ class CustomDataset(Dataset):
         # Очищаем кэш данных
         self.data = None
         self.seq_indices = None
+        self._reload_year()
 
 
 # dataset = CustomDataset(data_path="/path/to/pkls", years=[2018, 2019, 2020])
-# dataloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=False)
-# dataset.get_new_data()
+# dataloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
 # for epoch in range(num_epochs):
 #     for batch in dataloader:
 #         ... # обучение

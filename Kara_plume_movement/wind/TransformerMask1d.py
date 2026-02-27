@@ -159,21 +159,21 @@ class SequenceToVectorTransformer(nn.Module):
 
 
 # Пример:
-if __name__ == "__main__":
-    B, T, F = 8, 50, 32
-    x = torch.randn(B, T, F)
+# if __name__ == "__main__":
+#     B, T, F = 8, 50, 32
+#     x = torch.randn(B, T, F)
 
-    model = SequenceToVectorTransformer(
-        in_features=F,
-        d_model=128,
-        nhead=4,
-        num_layers=3,
-        out_dim=64,
-        mask_p=0.2,
-        mask_value=0.0,
-        pooling="mean",  # или "cls"
-    )
-    model.train()
+#     model = SequenceToVectorTransformer(
+#         in_features=F,
+#         d_model=128,
+#         nhead=4,
+#         num_layers=3,
+#         out_dim=64,
+#         mask_p=0.2,
+#         mask_value=0.0,
+#         pooling="mean",  # или "cls"
+#     )
+#     model.train()
 
-    y = model(x)  # (B,64)
-    print(y.shape)
+#     y = model(x)  # (B,64)
+#     print(y.shape)
