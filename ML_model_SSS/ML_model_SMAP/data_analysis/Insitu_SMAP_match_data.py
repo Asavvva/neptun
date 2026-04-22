@@ -163,6 +163,9 @@ for idx, row in tqdm(insitu.iterrows(), total=insitu.shape[0]):
     file_list = row['matched_files'].split(';')
 
     for fname in file_list:
+        if not fname.strip():
+            continue
+        
         nc_data = get_file_from_cache(fname)
 
         # Получаем плоские массивы для всех переменных сразу
